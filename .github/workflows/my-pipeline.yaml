@@ -30,3 +30,25 @@ jobs:
           cache: false
       - name: Run Golang tests
         run: go test ./main/additions/...
+
+  dora-deploy:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Install node
+        uses: actions/setup-node@v3
+      - run: |
+          export BRANCH=$(git rev-parse --abbrev-ref HEAD)
+          if [ "$BRANCH" != "main" ]; then
+            ENV=staging
+          else
+            ENV=prod
+          fi
+          echo "Deploying to environment: $ENV"
+          export DD_BETA_COMMANDS_ENABLED=1
+          export DD_API_KEY=${{ secrets.DD_API_KEY }}
+          yarn global add @datadog/datadog-ci
+          datadog-ci dora deployment --service close-the-deal-ci-cd-nikita --env $ENV --started-at `date +%s`
+      

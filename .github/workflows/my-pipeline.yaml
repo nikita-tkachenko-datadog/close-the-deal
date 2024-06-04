@@ -1,0 +1,32 @@
+name: Close the deal pipeline
+on: [push]
+
+env:
+  DD_API_KEY: ${{ secrets.DD_API_KEY }}
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    env:
+      DD_API_KEY: ${{ secrets.DD_API_KEY }}
+    steps:
+      - name: Setup
+        uses: actions/setup-node@v4
+      - name: Build image
+        run: echo "Building something..."
+      - name: Send image size custom metric
+        run: npx @datadog/datadog-ci measure --level pipeline --measures image.size:156
+
+  test:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '>=1.17.0'
+          cache: false
+      - name: Run Golang tests
+        run: go test ./main/additions/...
